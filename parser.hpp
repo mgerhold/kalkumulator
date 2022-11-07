@@ -7,6 +7,18 @@
 #include "expressions.hpp"
 #include "scanner.hpp"
 #include "tokens.hpp"
+#include <stdexcept>
+
+struct ParserError : public std::exception {
+    ParserError(std::string_view input, const Token* token, std::string_view error_message)
+        : input{ input },
+          token{ token },
+          error_message{ error_message } { }
+
+    std::string_view input;
+    const Token* token;
+    std::string_view error_message;
+};
 
 class Parser final {
 private:
@@ -70,18 +82,15 @@ private:
             advance();
             auto inner_expression = expression();
             if (not current().is_right_parenthesis()) {
-                print_error(m_input, current(), "expected \")\"");
-                std::exit(1);
+                throw ParserError{ m_input, &current(), "expected \")\"" };
             }
             advance();
             return inner_expression;
         }
         if (current().is_end_of_input()) {
-            print_error(m_input, current(), "unexpected end of input");
-            std::exit(1);
+            throw ParserError{ m_input, &current(), "unexpected end of input" };
         }
-        print_error(m_input, current(), "unexpected token");
-        std::exit(1);
+        throw ParserError{ m_input, &current(), "unexpected token" };
     }
 
     [[nodiscard]] const Token& current() const {

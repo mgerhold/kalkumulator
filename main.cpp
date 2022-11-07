@@ -30,6 +30,10 @@ int main() {
          */
         auto tokens = tokenize(input);
 
+        if (not tokens.has_value()) {
+            continue;
+        }
+
         /* 2. parse tokens (result: abstract syntax tree, AST)
          *    BinaryOperator(BinaryOperator(IntegerValue, IntegerValue), IntegerValue)
          *
@@ -45,13 +49,18 @@ int main() {
          *                           (1)               (2)
          */
 
-        auto parser = Parser{ input, std::move(tokens) };
-        const auto abstract_syntax_tree = parser.parse();
+        auto parser = Parser{ input, std::move(*tokens) };
 
-        /*3. evaluate AST
-         *    recursively traverse the tree structure and evaluate the value of each tree node
-         */
-        const auto result = abstract_syntax_tree->evaluate();
-        std::cout << result << "\n";
+        try {
+            const auto abstract_syntax_tree = parser.parse();
+
+            /*3. evaluate AST
+             *    recursively traverse the tree structure and evaluate the value of each tree node
+             */
+            const auto result = abstract_syntax_tree->evaluate();
+            std::cout << result << "\n";
+        } catch (const ParserError& exception) {
+            print_error(exception.input, *(exception.token), exception.error_message);
+        }
     }
 }

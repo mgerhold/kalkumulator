@@ -10,6 +10,7 @@
 #include <charconv>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string_view>
 #include <vector>
 
@@ -20,7 +21,7 @@ inline void add_token(TokenList& tokens, const char* const current_char, const u
     tokens.emplace_back(std::make_unique<TokenType>(std::string_view{ current_char, current_char + length }));
 }
 
-[[nodiscard]] inline TokenList tokenize(const std::string_view input) {
+[[nodiscard]] inline std::optional<TokenList> tokenize(const std::string_view input) {
     auto tokens = TokenList{};
     for (usize i = 0; i < input.size();) {
         const auto& current = input.at(i);
@@ -66,15 +67,14 @@ inline void add_token(TokenList& tokens, const char* const current_char, const u
 
                     if (out_of_range) {
                         print_error(input, integer_view, "integer literal out of bounds");
-                        std::exit(1);
+                        return {};
                     }
 
                     tokens.emplace_back(std::make_unique<IntegerLiteral>(integer_view, parsed_value));
                     continue;
                 }
                 print_error(input, &current, "unexpected input");
-                std::exit(1);
-                break;
+                return {};
         }
         i += token_length;
     }
