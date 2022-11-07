@@ -11,8 +11,8 @@
 }
 
 int main() {
-    std::cout << "Kalkumulator\n"
-                 "~~~~~~~~~~~~\n";
+    std::cout << "Kalkumulator 1.0\n"
+                 "Enter a mathematical expression you want to be evaluated.\n";
 
     auto symbol_table = SymbolTable{};
 
