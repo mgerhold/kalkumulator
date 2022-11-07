@@ -45,6 +45,9 @@ inline void add_token(TokenList& tokens, const char* const current_char, const u
             case '/':
                 add_token<ForwardSlash>(tokens, &current);
                 break;
+            case '=':
+                add_token<Equals>(tokens, &current);
+                break;
             default:
                 if (std::isspace(current)) {
                     break;
@@ -53,7 +56,7 @@ inline void add_token(TokenList& tokens, const char* const current_char, const u
                     const usize integer_start = i;
                     ++i;
                     while (i < input.length() and std::isdigit(input.at(i))) {
-                        i += 1;
+                        ++i;
                         ++token_length;
                     }
                     const auto integer_view = std::string_view{ input.data() + integer_start,
@@ -71,6 +74,20 @@ inline void add_token(TokenList& tokens, const char* const current_char, const u
                     }
 
                     tokens.emplace_back(std::make_unique<IntegerLiteral>(integer_view, parsed_value));
+                    continue;
+                }
+                if (std::isalpha(current)) {
+                    // identifier
+                    const usize identifier_start = i;
+                    ++i;
+                    while (i < input.length() and std::isalnum(input.at(i))) {
+                        ++i;
+                        ++token_length;
+                    }
+                    const auto identifier_view = std::string_view{ input.data() + identifier_start,
+                                                                   input.data() + identifier_start + token_length };
+
+                    tokens.emplace_back(std::make_unique<Identifier>(identifier_view));
                     continue;
                 }
                 print_error(input, &current, "unexpected input");

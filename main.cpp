@@ -13,6 +13,9 @@
 int main() {
     std::cout << "Kalkumulator\n"
                  "~~~~~~~~~~~~\n";
+
+    auto symbol_table = SymbolTable{};
+
     // REPL - read evaluate print loop
     while (true) {
         if (not std::cin.good()) {
@@ -57,10 +60,12 @@ int main() {
             /*3. evaluate AST
              *    recursively traverse the tree structure and evaluate the value of each tree node
              */
-            const auto result = abstract_syntax_tree->evaluate();
+            const auto result = abstract_syntax_tree->evaluate(symbol_table);
             std::cout << result << "\n";
         } catch (const ParserError& exception) {
             print_error(exception.input, *(exception.token), exception.error_message);
+        } catch (const EvaluationError& exception) {
+            std::cerr << "  evaluation error: " << exception.error_message << "\n";
         }
     }
 }

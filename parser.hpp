@@ -10,14 +10,14 @@
 #include <stdexcept>
 
 struct ParserError : public std::exception {
+    std::string_view input;
+    const Token* token;
+    std::string_view error_message;
+
     ParserError(std::string_view input, const Token* token, std::string_view error_message)
         : input{ input },
           token{ token },
           error_message{ error_message } { }
-
-    std::string_view input;
-    const Token* token;
-    std::string_view error_message;
 };
 
 class Parser final {
@@ -36,6 +36,18 @@ public:
 
 private:
     [[nodiscard]] std::unique_ptr<Expression> expression() {
+        return assignment();
+    }
+
+    [[nodiscard]] std::unique_ptr<Expression> assignment() {
+        if (current().is_identifier() and next().is_equals()) {
+            // assignment
+            const auto variable_name = current().lexeme;
+            advance();
+            advance();
+            auto value = expression();
+            return std::make_unique<Assignment>(variable_name, std::move(value));
+        }
         return addition_or_subtraction();
     }
 
@@ -74,6 +86,11 @@ private:
     [[nodiscard]] std::unique_ptr<Expression> primary() {
         if (current().is_integer_literal()) {
             auto result = std::make_unique<IntegerValue>(current().value());
+            advance();
+            return result;
+        }
+        if (current().is_identifier()) {
+            auto result = std::make_unique<Variable>(current().lexeme);
             advance();
             return result;
         }

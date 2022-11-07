@@ -33,6 +33,10 @@ struct Token {
         return false;
     }
 
+    [[nodiscard]] virtual bool is_equals() const {
+        return false;
+    }
+
     [[nodiscard]] virtual bool is_left_parenthesis() const {
         return false;
     }
@@ -46,6 +50,10 @@ struct Token {
     }
 
     [[nodiscard]] virtual bool is_end_of_input() const {
+        return false;
+    }
+
+    [[nodiscard]] virtual bool is_identifier() const {
         return false;
     }
 
@@ -103,6 +111,14 @@ struct ForwardSlash final : public Token {
     }
 };
 
+struct Equals final : public Token {
+    using Token::Token;
+
+    [[nodiscard]] bool is_equals() const override {
+        return true;
+    }
+};
+
 struct IntegerLiteral final : public Token {
 private:
     u32 m_value;
@@ -123,6 +139,14 @@ struct EndOfInput final : public Token {
     using Token::Token;
 
     [[nodiscard]] bool is_end_of_input() const override {
+        return true;
+    }
+};
+
+struct Identifier final : public Token {
+    using Token::Token;
+
+    [[nodiscard]] bool is_identifier() const override {
         return true;
     }
 };

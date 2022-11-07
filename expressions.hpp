@@ -4,11 +4,22 @@
 
 #pragma once
 
-#include "types.hpp"
 #include "error.hpp"
+#include "types.hpp"
 #include <cassert>
+#include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <unordered_map>
+
+struct EvaluationError final : public std::exception {
+    std::string error_message;
+
+    explicit EvaluationError(std::string error_message) : error_message{ std::move(error_message) } { }
+};
+
+using SymbolTable = std::unordered_map<std::string, i64>;
 
 enum class BinaryOperatorType {
     Add,
@@ -26,7 +37,7 @@ struct Expression {
 public:
     virtual ~Expression() = default;
     [[nodiscard]] virtual std::string to_string() const = 0;
-    [[nodiscard]] virtual i64 evaluate() const = 0;
+    [[nodiscard]] virtual i64 evaluate(SymbolTable&) const = 0;
 };
 
 struct IntegerValue final : public Expression {
@@ -40,7 +51,7 @@ public:
         return std::to_string(m_value);
     }
 
-    [[nodiscard]] i64 evaluate() const override {
+    [[nodiscard]] i64 evaluate(SymbolTable&) const override {
         return static_cast<i64>(m_value);
     }
 };
@@ -80,10 +91,10 @@ public:
         return result;
     }
 
-    [[nodiscard]] i64 evaluate() const override {
+    [[nodiscard]] i64 evaluate(SymbolTable& symbol_table) const override {
         using namespace std::string_view_literals;
-        const auto left = m_lhs->evaluate();
-        const auto right = m_rhs->evaluate();
+        const auto left = m_lhs->evaluate(symbol_table);
+        const auto right = m_rhs->evaluate(symbol_table);
         switch (m_operator_type) {
             case BinaryOperatorType::Add:
                 return left + right;
@@ -93,8 +104,7 @@ public:
                 return left * right;
             case BinaryOperatorType::Divide:
                 if (right == 0) {
-                    print_error(""sv, ""sv, "divide by zero error"sv);
-                    std::exit(1);
+                    throw EvaluationError{ "divide by zero error" };
                 }
                 return left / right;
             default:
@@ -110,7 +120,7 @@ private:
     std::unique_ptr<Expression> m_sub_expression;
 
 public:
-    explicit UnaryOperator(UnaryOperatorType operator_type, std::unique_ptr<Expression> sub_expression)
+    UnaryOperator(UnaryOperatorType operator_type, std::unique_ptr<Expression> sub_expression)
         : m_operator_type{ operator_type },
           m_sub_expression{ std::move(sub_expression) } { }
 
@@ -130,8 +140,8 @@ public:
         return result;
     }
 
-    [[nodiscard]] i64 evaluate() const override {
-        const auto sub_expression_value = m_sub_expression->evaluate();
+    [[nodiscard]] i64 evaluate(SymbolTable& symbol_table) const override {
+        const auto sub_expression_value = m_sub_expression->evaluate(symbol_table);
         switch (m_operator_type) {
             case UnaryOperatorType::Plus:
                 return sub_expression_value;
@@ -141,5 +151,49 @@ public:
                 assert(false and "unreachable");
                 return 0;
         }
+    }
+};
+
+struct Assignment final : public Expression {
+private:
+    std::string_view m_variable_name;
+    std::unique_ptr<Expression> m_value;
+
+public:
+    Assignment(std::string_view variable_name, std::unique_ptr<Expression> value)
+        : m_variable_name{ variable_name },
+          m_value{ std::move(value) } { }
+
+    [[nodiscard]] std::string to_string() const override {
+        return std::string{ m_variable_name };
+    }
+
+    [[nodiscard]] i64 evaluate(SymbolTable& symbol_table) const override {
+        const auto value = m_value->evaluate(symbol_table);
+        symbol_table[std::string{ m_variable_name }] = value;
+        return value;
+    }
+};
+
+struct Variable final : public Expression {
+private:
+    std::string_view m_variable_name;
+
+public:
+    explicit Variable(std::string_view variable_name) : m_variable_name{ variable_name } { }
+
+    [[nodiscard]] std::string to_string() const override {
+        return std::string{ m_variable_name };
+    }
+
+    [[nodiscard]] i64 evaluate(SymbolTable& symbol_table) const override {
+        using namespace std::string_literals;
+
+        const auto find_iterator = symbol_table.find(std::string{ m_variable_name });
+        const auto found = (find_iterator != symbol_table.cend());
+        if (not found) {
+            throw EvaluationError{ "use of undefined variable \""s + std::string{ m_variable_name } + "\"" };
+        }
+        return find_iterator->second;
     }
 };
