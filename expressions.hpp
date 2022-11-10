@@ -69,7 +69,10 @@ public:
           m_rhs{ std::move(rhs) } { }
 
     [[nodiscard]] std::string to_string() const override {
-        auto result = "(" + m_lhs->to_string();
+        using namespace std::string_literals;
+
+        auto result = "("s;
+        result += m_lhs->to_string();
         switch (m_operator_type) {
             case BinaryOperatorType::Add:
                 result += " + ";
@@ -125,7 +128,8 @@ public:
           m_sub_expression{ std::move(sub_expression) } { }
 
     [[nodiscard]] std::string to_string() const override {
-        auto result = "(" + [&]() -> std::string {
+        using namespace std::string_literals;
+        const auto operator_text = [&]() -> std::string {
             switch (m_operator_type) {
                 case UnaryOperatorType::Plus:
                     return "+";
@@ -136,6 +140,8 @@ public:
                     return "";
             }
         }();
+
+        auto result = "("s + operator_text;
         result += m_sub_expression->to_string() + ")";
         return result;
     }
