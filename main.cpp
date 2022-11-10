@@ -12,7 +12,7 @@
 
 int main() {
     std::cout << "Kalkumulator 1.0\n"
-                 "Enter a mathematical expression you want to be evaluated.\n";
+                 "Enter a mathematical expression you want to be evaluated. Type \"exit\" to quit.\n";
 
     auto symbol_table = SymbolTable{};
 
